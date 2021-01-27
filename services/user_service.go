@@ -2,8 +2,10 @@ package services
 
 import (
 	"github.com/Abacode7/bookstore_users-api/domain/users"
+	"github.com/Abacode7/bookstore_users-api/utils/crypto_utils"
 	"github.com/Abacode7/bookstore_users-api/utils/date_utils"
 	"github.com/Abacode7/bookstore_users-api/utils/errors"
+	"github.com/Abacode7/bookstore_users-api/utils/logger"
 )
 
 type IUserService interface {
@@ -27,11 +29,15 @@ func (us *userService) CreateUser(user users.User) (*users.User, *errors.RestErr
 	if err := user.Validate(); err != nil {
 		return nil, err
 	}
-
-	user.DateCreated = date_utils.GetDbFormattedTime()
-	if user.Status == "" {
-		user.Status = "inactive"
+	var err error
+	user.Password, err = crypto_utils.GetHash(user.Password)
+	if err != nil {
+		logger.Error("error generating password hash", err)
+		restErr := errors.NewBadRequestError("invalid user password")
+		return nil, restErr
 	}
+	user.DateCreated = date_utils.GetDbFormattedTime()
+	user.Status = users.StatusActive
 
 	newUser, daoErr := us.userDao.Save(user)
 	if daoErr != nil {
@@ -41,23 +47,14 @@ func (us *userService) CreateUser(user users.User) (*users.User, *errors.RestErr
 }
 
 func (us *userService) GetUser(userID int64) (*users.User, *errors.RestErr) {
-	user, err := us.userDao.Get(userID)
-	if err != nil {
-		return nil, err
-	}
-	return user, nil
+	return us.userDao.Get(userID)
 }
 
 func (us *userService) SearchUser(status string) ([]users.User, *errors.RestErr) {
-	users, err := us.userDao.FindByStatus(status)
-	if err != nil {
-		return nil, err
-	}
-	return users, nil
+	return us.userDao.FindByStatus(status)
 }
 
 func (us *userService) UpdateUser(isTotalUpdate bool, user users.User) (*users.User, *errors.RestErr) {
-
 	oldUser, getErr := us.userDao.Get(user.Id)
 	if getErr != nil {
 		return nil, getErr
@@ -79,19 +76,22 @@ func (us *userService) UpdateUser(isTotalUpdate bool, user users.User) (*users.U
 		if user.Password == "" {
 			user.Password = oldUser.Password
 		}
+	}else {
+		// For total update the only password field needs to be modified.
+		// It is to be hashed before saving to the db.
+		var err error
+		user.Password, err = crypto_utils.GetHash(user.Password)
+		if err != nil {
+			logger.Error("error generating password hash", err)
+			restErr := errors.NewBadRequestError("invalid user password")
+			return nil, restErr
+		}
 	}
 	user.DateCreated = oldUser.DateCreated
 
-	result, updateErr := us.userDao.Update(user)
-	if updateErr != nil {
-		return nil, updateErr
-	}
-	return result, nil
+	return us.userDao.Update(user)
 }
 
 func (us *userService) DeleteUser(userId int64) *errors.RestErr {
-	if err := us.userDao.Delete(userId); err != nil {
-		return err
-	}
-	return nil
+	return us.userDao.Delete(userId)
 }

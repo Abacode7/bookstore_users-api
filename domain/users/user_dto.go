@@ -2,6 +2,11 @@ package users
 
 import "github.com/Abacode7/bookstore_users-api/utils/errors"
 
+const (
+	StatusActive = "active"
+	StatusInactive = "inactive"
+)
+
 type User struct {
 	Id          int64  `json:"id"`
 	FirstName   string `json:"first_name"`
