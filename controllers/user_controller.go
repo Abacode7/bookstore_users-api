@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Abacode7/bookstore_users-api/domain/requests"
 	"github.com/Abacode7/bookstore_users-api/domain/users"
 	"github.com/Abacode7/bookstore_users-api/services"
 	"github.com/Abacode7/bookstore_users-api/utils/errors"
@@ -16,6 +17,7 @@ type IUserController interface {
 	SearchUser(c *gin.Context)
 	UpdateUser(c *gin.Context)
 	DeleteUser(c *gin.Context)
+	LoginUser(c *gin.Context)
 }
 
 type userController struct {
@@ -112,4 +114,20 @@ func (uc *userController) DeleteUser(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, map[string]string{"status": "deleted"})
+}
+
+func (uc *userController) LoginUser(c *gin.Context) {
+	var ulr requests.UserLoginRequest
+	if err := c.ShouldBindJSON(&ulr); err != nil {
+		restErr := errors.NewBadRequestError("invalid requests body")
+		c.JSON(restErr.Status, restErr)
+		return
+	}
+	user, err := uc.userService.LoginUser(ulr)
+	if err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
+	//Todo: Modify user controllers to not return all user details
+	c.JSON(http.StatusOK, user)
 }

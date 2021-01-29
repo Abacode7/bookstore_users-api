@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/Abacode7/bookstore_users-api/domain/requests"
 	"github.com/Abacode7/bookstore_users-api/domain/users"
 	"github.com/Abacode7/bookstore_users-api/utils/crypto_utils"
 	"github.com/Abacode7/bookstore_users-api/utils/date_utils"
@@ -14,6 +15,7 @@ type IUserService interface {
 	SearchUser(string) ([]users.User, *errors.RestErr)
 	UpdateUser(bool, users.User) (*users.User, *errors.RestErr)
 	DeleteUser(int64) *errors.RestErr
+	LoginUser(requests.UserLoginRequest) (*users.User, *errors.RestErr)
 }
 
 type userService struct {
@@ -94,4 +96,16 @@ func (us *userService) UpdateUser(isTotalUpdate bool, user users.User) (*users.U
 
 func (us *userService) DeleteUser(userId int64) *errors.RestErr {
 	return us.userDao.Delete(userId)
+}
+
+func (us *userService) LoginUser(request requests.UserLoginRequest) (*users.User, *errors.RestErr) {
+	if err := request.Validate(); err != nil {
+		return nil, err
+	}
+	var err error
+	request.Password, err = crypto_utils.GetHash(request.Password)
+	if err != nil {
+		return nil, errors.NewBadRequestError("invalid user password")
+	}
+	return us.userDao.FindByEmailAndPassword(request.Email, request.Password)
 }
