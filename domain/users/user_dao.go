@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	insertQuery = `INSERT INTO users (first_name, last_name, email, date_created, status, password) VALUES (?, ?, ?, ?, ?, ?);`
-	getQuery    = `SELECT * FROM users WHERE id=?;`
-	findQuery   = `SELECT * FROM users WHERE status=?;`
-	updateQuery = `UPDATE users SET first_name=?, last_name=?, email=?, status=?, password=? WHERE id=?;`
-	deleteQuery = `DELETE FROM users WHERE id=?;`
+	insertQuery                 = `INSERT INTO users (first_name, last_name, email, date_created, status, password) VALUES (?, ?, ?, ?, ?, ?);`
+	getQuery                    = `SELECT * FROM users WHERE id=?;`
+	findQuery                   = `SELECT * FROM users WHERE status=?;`
+	updateQuery                 = `UPDATE users SET first_name=?, last_name=?, email=?, status=?, password=? WHERE id=?;`
+	deleteQuery                 = `DELETE FROM users WHERE id=?;`
 	findByEmailAndPasswordQuery = `SELECT * FROM users WHERE email = ? AND password = ? AND status = ?;`
 )
 

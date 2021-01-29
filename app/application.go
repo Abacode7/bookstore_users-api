@@ -17,7 +17,7 @@ var router = gin.Default()
 func StartApplication() {
 	/// Load .env config file into the os
 	err := godotenv.Load()
-	if err != nil{
+	if err != nil {
 		log.Fatalln(err)
 	}
 

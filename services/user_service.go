@@ -78,7 +78,7 @@ func (us *userService) UpdateUser(isTotalUpdate bool, user users.User) (*users.U
 		if user.Password == "" {
 			user.Password = oldUser.Password
 		}
-	}else {
+	} else {
 		// For total update the only password field needs to be modified.
 		// It is to be hashed before saving to the db.
 		var err error
