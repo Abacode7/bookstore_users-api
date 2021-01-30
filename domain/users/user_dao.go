@@ -154,7 +154,11 @@ func (ud *userDao) FindByStatus(status string) ([]User, *errors.RestErr) {
 	users := make([]User, 0)
 	for rows.Next() {
 		var user User
-		rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status, &user.Password)
+		err := rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status)
+		if err != nil {
+			logger.Error("error scanning retrieved data", stmtErr)
+			return nil, errors.NewInternalServerError("database error")
+		}
 		users = append(users, user)
 	}
 	return users, nil
