@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"github.com/Abacode7/bookstore_users-api/domain/requests"
 	"github.com/Abacode7/bookstore_users-api/domain/users"
 	"github.com/Abacode7/bookstore_users-api/services"
 	"github.com/Abacode7/bookstore_users-api/utils/errors"
@@ -117,7 +116,7 @@ func (uc *userController) DeleteUser(c *gin.Context) {
 }
 
 func (uc *userController) LoginUser(c *gin.Context) {
-	var ulr requests.UserLoginRequest
+	var ulr users.UserLoginRequest
 	if err := c.ShouldBindJSON(&ulr); err != nil {
 		restErr := errors.NewBadRequestError("invalid requests body")
 		c.JSON(restErr.Status, restErr)

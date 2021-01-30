@@ -1,4 +1,4 @@
-package requests
+package users
 
 import "github.com/Abacode7/bookstore_users-api/utils/errors"
 

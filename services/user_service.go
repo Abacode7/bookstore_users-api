@@ -1,7 +1,6 @@
 package services
 
 import (
-	"github.com/Abacode7/bookstore_users-api/domain/requests"
 	"github.com/Abacode7/bookstore_users-api/domain/users"
 	"github.com/Abacode7/bookstore_users-api/utils/crypto_utils"
 	"github.com/Abacode7/bookstore_users-api/utils/date_utils"
@@ -15,7 +14,7 @@ type IUserService interface {
 	SearchUser(string) ([]users.User, *errors.RestErr)
 	UpdateUser(bool, users.User) (*users.User, *errors.RestErr)
 	DeleteUser(int64) *errors.RestErr
-	LoginUser(requests.UserLoginRequest) (*users.User, *errors.RestErr)
+	LoginUser(users.UserLoginRequest) (*users.User, *errors.RestErr)
 }
 
 type userService struct {
@@ -58,29 +57,14 @@ func (us *userService) SearchUser(status string) ([]users.User, *errors.RestErr)
 
 func (us *userService) UpdateUser(isTotalUpdate bool, user users.User) (*users.User, *errors.RestErr) {
 	oldUser, getErr := us.userDao.Get(user.Id)
-	if getErr != nil {
+	if getErr != nil  {
 		return nil, getErr
 	}
-
-	if !isTotalUpdate {
-		if user.FirstName == "" {
-			user.FirstName = oldUser.FirstName
-		}
-		if user.LastName == "" {
-			user.LastName = oldUser.LastName
-		}
-		if user.Email == "" {
-			user.Email = oldUser.Email
-		}
-		if user.Status == "" {
-			user.Status = oldUser.Status
-		}
-		if user.Password == "" {
-			user.Password = oldUser.Password
-		}
-	} else {
-		// For total update the only password field needs to be modified.
-		// It is to be hashed before saving to the db.
+	// For fields email, password, status and date_created, if values
+	// aren't provided, they retain their old values.
+	if user.Password == "" {
+		user.Password = oldUser.Password
+	}else {
 		var err error
 		user.Password, err = crypto_utils.GetHash(user.Password)
 		if err != nil {
@@ -89,8 +73,24 @@ func (us *userService) UpdateUser(isTotalUpdate bool, user users.User) (*users.U
 			return nil, restErr
 		}
 	}
+	if user.Email == "" {
+		user.Email = oldUser.Email
+	}
+	if user.Status == "" {
+		user.Status = oldUser.Status
+	}
 	user.DateCreated = oldUser.DateCreated
 
+	// For total update if values aren't provided for fields first_name
+	// and last_name they take and empty default value
+	if !isTotalUpdate {
+		if user.FirstName == "" {
+			user.FirstName = oldUser.FirstName
+		}
+		if user.LastName == "" {
+			user.LastName = oldUser.LastName
+		}
+	}
 	return us.userDao.Update(user)
 }
 
@@ -98,14 +98,17 @@ func (us *userService) DeleteUser(userId int64) *errors.RestErr {
 	return us.userDao.Delete(userId)
 }
 
-func (us *userService) LoginUser(request requests.UserLoginRequest) (*users.User, *errors.RestErr) {
+func (us *userService) LoginUser(request users.UserLoginRequest) (*users.User, *errors.RestErr) {
 	if err := request.Validate(); err != nil {
 		return nil, err
 	}
-	var err error
-	request.Password, err = crypto_utils.GetHash(request.Password)
+	user, err := us.userDao.FindByEmail(request.Email)
 	if err != nil {
-		return nil, errors.NewBadRequestError("invalid user password")
+		return nil, err
 	}
-	return us.userDao.FindByEmailAndPassword(request.Email, request.Password)
+	if err := crypto_utils.CompareHashAndPassword(user.Password, request.Password); err != nil{
+		logger.Error("passwords do not match", err)
+		return nil, errors.NewBadRequestError("wrong user password")
+	}
+	return user, nil
 }

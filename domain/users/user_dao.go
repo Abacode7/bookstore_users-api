@@ -7,12 +7,12 @@ import (
 )
 
 const (
-	insertQuery                 = `INSERT INTO users (first_name, last_name, email, date_created, status, password) VALUES (?, ?, ?, ?, ?, ?);`
-	getQuery                    = `SELECT * FROM users WHERE id=?;`
-	findQuery                   = `SELECT * FROM users WHERE status=?;`
-	updateQuery                 = `UPDATE users SET first_name=?, last_name=?, email=?, status=?, password=? WHERE id=?;`
-	deleteQuery                 = `DELETE FROM users WHERE id=?;`
-	findByEmailAndPasswordQuery = `SELECT * FROM users WHERE email = ? AND password = ? AND status = ?;`
+	insertUserQuery                 = `INSERT INTO users (first_name, last_name, email, date_created, status, password) VALUES (?, ?, ?, ?, ?, ?);`
+	getUserQuery                    = `SELECT id, first_name, last_name, email, date_created, status, password FROM users WHERE id=?;`
+	findByStatusQuery                   = `SELECT id, first_name, last_name, email, date_created, status FROM users WHERE status=?;`
+	updateUserQuery                 = `UPDATE users SET first_name=?, last_name=?, email=?, status=?, password=? WHERE id=?;`
+	deleteUserQuery                 = `DELETE FROM users WHERE id=?;`
+	findByEmailQuery = `SELECT * FROM users WHERE email = ? AND status = ?;`
 )
 
 type IUserDao interface {
@@ -21,7 +21,7 @@ type IUserDao interface {
 	FindByStatus(string) ([]User, *errors.RestErr)
 	Update(User) (*User, *errors.RestErr)
 	Delete(int64) *errors.RestErr
-	FindByEmailAndPassword(string, string) (*User, *errors.RestErr)
+	FindByEmail(string) (*User, *errors.RestErr)
 }
 
 type userDao struct {
@@ -35,7 +35,7 @@ func NewUserDao(db *sql.DB) IUserDao {
 
 /// Save stores the user in the database
 func (ud *userDao) Save(user User) (*User, *errors.RestErr) {
-	stmt, err := ud.client.Prepare(insertQuery)
+	stmt, err := ud.client.Prepare(insertUserQuery)
 	if err != nil {
 		logger.Error("error preparing insert query", err)
 		restErr := errors.NewInternalServerError("Prepare err: database error")
@@ -51,7 +51,7 @@ func (ud *userDao) Save(user User) (*User, *errors.RestErr) {
 	}
 	userId, queryErr := result.LastInsertId()
 	if queryErr != nil {
-		logger.Error("error retrieveing last insert id", queryErr)
+		logger.Error("error retrieving last insert id", queryErr)
 		restErr := errors.NewInternalServerError("Result err: database error")
 		return nil, restErr
 	}
@@ -62,7 +62,7 @@ func (ud *userDao) Save(user User) (*User, *errors.RestErr) {
 
 /// Gets a user with id userID
 func (ud *userDao) Get(userID int64) (*User, *errors.RestErr) {
-	stmt, err := ud.client.Prepare(getQuery)
+	stmt, err := ud.client.Prepare(getUserQuery)
 	if err != nil {
 		logger.Error("error preparing get query", err)
 		sqlErr := errors.NewInternalServerError("database error")
@@ -70,130 +70,109 @@ func (ud *userDao) Get(userID int64) (*User, *errors.RestErr) {
 	}
 	defer stmt.Close()
 
-	rows, queryErr := stmt.Query(userID)
-	if queryErr != nil {
-		logger.Error("error getting user with userId", queryErr)
-		err := errors.NewInternalServerError("database error")
-		return nil, err
-	}
-
-	count := 0
 	var user User
-	if rows.Next() {
-		rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status, &user.Password)
-		count++
-	}
-	if count < 1 {
-		err := errors.NewBadRequestError("user with id doesnt exist")
-		return nil, err
+	row := stmt.QueryRow(userID)
+	rowErr := row.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status, &user.Password)
+	if rowErr != nil {
+		if rowErr == sql.ErrNoRows {
+			return nil, errors.NewNotFoundError("invalid user id: user not found")
+		}
+		logger.Error("error scanning user data", rowErr)
+		return nil, errors.NewInternalServerError("database error")
 	}
 	return &user, nil
 }
 
 /// Update modifies the values of a user with specified id
 func (ud *userDao) Update(user User) (*User, *errors.RestErr) {
-	stmt, prepErr := ud.client.Prepare(updateQuery)
+	stmt, prepErr := ud.client.Prepare(updateUserQuery)
 	if prepErr != nil {
 		logger.Error("error preparing update query", prepErr)
-		err := errors.NewInternalServerError("database error")
-		return nil, err
+		return nil, errors.NewInternalServerError("database error")
 	}
 	defer stmt.Close()
 
-	result, stmtErr := stmt.Exec(user.FirstName, user.LastName, user.Email, user.Status, user.Password, user.Id)
+	_, stmtErr := stmt.Exec(user.FirstName, user.LastName, user.Email, user.Status, user.Password, user.Id)
 	if stmtErr != nil {
 		logger.Error("error when trying to update user", stmtErr)
-		err := errors.NewInternalServerError("database error")
-		return nil, err
-	}
-
-	rowsAff, err := result.RowsAffected()
-	if err != nil {
-		logger.Error("error when trying to retrieve rows affected", err)
-		rowErr := errors.NewInternalServerError("database error")
-		return nil, rowErr
-	}
-	if rowsAff < 1 {
-		err := errors.NewBadRequestError("user with id doesn't exist")
-		return nil, err
+		return nil, errors.NewInternalServerError("database error")
 	}
 	return &user, nil
 }
 
 /// Delete removes user with userId from the database
 func (ud *userDao) Delete(userId int64) *errors.RestErr {
-	stmt, prepErr := ud.client.Prepare(deleteQuery)
+	stmt, prepErr := ud.client.Prepare(deleteUserQuery)
 	if prepErr != nil {
 		logger.Error("error preparing delete query", prepErr)
-		err := errors.NewInternalServerError("database error")
-		return err
+		return errors.NewInternalServerError("database error")
 	}
 	defer stmt.Close()
 
 	result, stmtErr := stmt.Exec(userId)
 	if stmtErr != nil {
 		logger.Error("error executing delete query", stmtErr)
-		err := errors.NewInternalServerError("database error")
-		return err
+		return errors.NewInternalServerError("database error")
 	}
 
 	rowsAff, err := result.RowsAffected()
 	if err != nil {
 		logger.Error("error retrieving rows affected", err)
-		er := errors.NewInternalServerError("database error")
-		return er
+		return errors.NewInternalServerError("database error")
 	}
 	if rowsAff < 1 {
-		err := errors.NewBadRequestError("user with id doesnt exist")
-		return err
+		return errors.NewBadRequestError("user with id doesnt exist")
 	}
 	return nil
 }
 
 /// FindByStatus gets all users with given status
 func (ud *userDao) FindByStatus(status string) ([]User, *errors.RestErr) {
-	stmt, prepErr := ud.client.Prepare(findQuery)
+	stmt, prepErr := ud.client.Prepare(findByStatusQuery)
 	if prepErr != nil {
 		logger.Error("error preparing findByStatus query", prepErr)
-		err := errors.NewInternalServerError("database error")
-		return nil, err
+		return nil, errors.NewInternalServerError("database error")
 	}
 	defer stmt.Close()
 
 	rows, stmtErr := stmt.Query(status)
 	if stmtErr != nil {
 		logger.Error("error executing findByStatus query", stmtErr)
-		err := errors.NewInternalServerError("database error")
-		return nil, err
+		return nil, errors.NewInternalServerError("database error")
 	}
 	defer rows.Close()
 
 	users := make([]User, 0)
 	for rows.Next() {
 		var user User
-		rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status, &user.Password)
+		err := rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status)
+		if err != nil {
+			logger.Error("error scanning retrieved data", stmtErr)
+			return nil, errors.NewInternalServerError("database error")
+		}
 		users = append(users, user)
 	}
 	return users, nil
 }
 
 /// FindByEmailAndPassword gets the user with given email and password
-func (ud *userDao) FindByEmailAndPassword(email, password string) (*User, *errors.RestErr) {
-	stmt, prepErr := ud.client.Prepare(findByEmailAndPasswordQuery)
+func (ud *userDao) FindByEmail(email string) (*User, *errors.RestErr) {
+	stmt, prepErr := ud.client.Prepare(findByEmailQuery)
 	if prepErr != nil {
 		logger.Error("error executing findByEmailAndPassword query", prepErr)
 		err := errors.NewInternalServerError("database error")
 		return nil, err
 	}
-	rows := stmt.QueryRow(email, password, StatusActive)
+	rows := stmt.QueryRow(email, StatusActive)
 	var user User
 	err := rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status, &user.Password)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			logger.Error("user not found", err)
 			return nil, errors.NewNotFoundError("invalid data: user not found")
 		}
 		logger.Error("error scanning retrieved data", err)
 		return nil, errors.NewInternalServerError("database error")
 	}
-	return nil, nil
+	return &user, nil
 }
