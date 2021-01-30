@@ -102,10 +102,13 @@ func (us *userService) LoginUser(request requests.UserLoginRequest) (*users.User
 	if err := request.Validate(); err != nil {
 		return nil, err
 	}
-	var err error
-	request.Password, err = crypto_utils.GetHash(request.Password)
+	user, err := us.userDao.FindByEmail(request.Email)
 	if err != nil {
-		return nil, errors.NewBadRequestError("invalid user password")
+		return nil, err
 	}
-	return us.userDao.FindByEmailAndPassword(request.Email, request.Password)
+	if err := crypto_utils.CompareHashAndPassword(user.Password, request.Password); err != nil{
+		logger.Error("passwords do not match", err)
+		return nil, errors.NewBadRequestError("wrong user password")
+	}
+	return user, nil
 }

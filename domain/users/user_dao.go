@@ -12,7 +12,7 @@ const (
 	findQuery                   = `SELECT * FROM users WHERE status=?;`
 	updateQuery                 = `UPDATE users SET first_name=?, last_name=?, email=?, status=?, password=? WHERE id=?;`
 	deleteQuery                 = `DELETE FROM users WHERE id=?;`
-	findByEmailAndPasswordQuery = `SELECT * FROM users WHERE email = ? AND password = ? AND status = ?;`
+	findByEmailQuery = `SELECT * FROM users WHERE email = ? AND status = ?;`
 )
 
 type IUserDao interface {
@@ -21,7 +21,7 @@ type IUserDao interface {
 	FindByStatus(string) ([]User, *errors.RestErr)
 	Update(User) (*User, *errors.RestErr)
 	Delete(int64) *errors.RestErr
-	FindByEmailAndPassword(string, string) (*User, *errors.RestErr)
+	FindByEmail(string) (*User, *errors.RestErr)
 }
 
 type userDao struct {
@@ -178,22 +178,23 @@ func (ud *userDao) FindByStatus(status string) ([]User, *errors.RestErr) {
 }
 
 /// FindByEmailAndPassword gets the user with given email and password
-func (ud *userDao) FindByEmailAndPassword(email, password string) (*User, *errors.RestErr) {
-	stmt, prepErr := ud.client.Prepare(findByEmailAndPasswordQuery)
+func (ud *userDao) FindByEmail(email string) (*User, *errors.RestErr) {
+	stmt, prepErr := ud.client.Prepare(findByEmailQuery)
 	if prepErr != nil {
 		logger.Error("error executing findByEmailAndPassword query", prepErr)
 		err := errors.NewInternalServerError("database error")
 		return nil, err
 	}
-	rows := stmt.QueryRow(email, password, StatusActive)
+	rows := stmt.QueryRow(email, StatusActive)
 	var user User
 	err := rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status, &user.Password)
 	if err != nil {
 		if err == sql.ErrNoRows {
+			logger.Error("user not found", err)
 			return nil, errors.NewNotFoundError("invalid data: user not found")
 		}
 		logger.Error("error scanning retrieved data", err)
 		return nil, errors.NewInternalServerError("database error")
 	}
-	return nil, nil
+	return &user, nil
 }
