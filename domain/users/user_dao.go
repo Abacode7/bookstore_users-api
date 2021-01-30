@@ -8,7 +8,7 @@ import (
 
 const (
 	insertUserQuery                 = `INSERT INTO users (first_name, last_name, email, date_created, status, password) VALUES (?, ?, ?, ?, ?, ?);`
-	getUserQuery                    = `SELECT id, first_name, last_name, email, date_created, status FROM users WHERE id=?;`
+	getUserQuery                    = `SELECT id, first_name, last_name, email, date_created, status, password FROM users WHERE id=?;`
 	findByStatusQuery                   = `SELECT id, first_name, last_name, email, date_created, status FROM users WHERE status=?;`
 	updateUserQuery                 = `UPDATE users SET first_name=?, last_name=?, email=?, status=?, password=? WHERE id=?;`
 	deleteUserQuery                 = `DELETE FROM users WHERE id=?;`
@@ -72,7 +72,7 @@ func (ud *userDao) Get(userID int64) (*User, *errors.RestErr) {
 
 	var user User
 	row := stmt.QueryRow(userID)
-	rowErr := row.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status)
+	rowErr := row.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status, &user.Password)
 	if rowErr != nil {
 		if rowErr == sql.ErrNoRows {
 			return nil, errors.NewNotFoundError("invalid user id: user not found")
@@ -92,19 +92,10 @@ func (ud *userDao) Update(user User) (*User, *errors.RestErr) {
 	}
 	defer stmt.Close()
 
-	result, stmtErr := stmt.Exec(user.FirstName, user.LastName, user.Email, user.Status, user.Password, user.Id)
+	_, stmtErr := stmt.Exec(user.FirstName, user.LastName, user.Email, user.Status, user.Password, user.Id)
 	if stmtErr != nil {
 		logger.Error("error when trying to update user", stmtErr)
 		return nil, errors.NewInternalServerError("database error")
-	}
-
-	rowsAff, err := result.RowsAffected()
-	if err != nil {
-		logger.Error("error when trying to retrieve rows affected", err)
-		return nil, errors.NewInternalServerError("database error")
-	}
-	if rowsAff < 1 {
-		return nil, errors.NewBadRequestError("user with id doesn't exist")
 	}
 	return &user, nil
 }

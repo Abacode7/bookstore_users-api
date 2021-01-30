@@ -57,29 +57,14 @@ func (us *userService) SearchUser(status string) ([]users.User, *errors.RestErr)
 
 func (us *userService) UpdateUser(isTotalUpdate bool, user users.User) (*users.User, *errors.RestErr) {
 	oldUser, getErr := us.userDao.Get(user.Id)
-	if getErr != nil {
+	if getErr != nil  {
 		return nil, getErr
 	}
-
-	if !isTotalUpdate {
-		if user.FirstName == "" {
-			user.FirstName = oldUser.FirstName
-		}
-		if user.LastName == "" {
-			user.LastName = oldUser.LastName
-		}
-		if user.Email == "" {
-			user.Email = oldUser.Email
-		}
-		if user.Status == "" {
-			user.Status = oldUser.Status
-		}
-		if user.Password == "" {
-			user.Password = oldUser.Password
-		}
-	} else {
-		// For total update the only password field needs to be modified.
-		// It is to be hashed before saving to the db.
+	// For fields email, password, status and date_created, if values
+	// aren't provided, they retain their old values.
+	if user.Password == "" {
+		user.Password = oldUser.Password
+	}else {
 		var err error
 		user.Password, err = crypto_utils.GetHash(user.Password)
 		if err != nil {
@@ -88,8 +73,24 @@ func (us *userService) UpdateUser(isTotalUpdate bool, user users.User) (*users.U
 			return nil, restErr
 		}
 	}
+	if user.Email == "" {
+		user.Email = oldUser.Email
+	}
+	if user.Status == "" {
+		user.Status = oldUser.Status
+	}
 	user.DateCreated = oldUser.DateCreated
 
+	// For total update if values aren't provided for fields first_name
+	// and last_name they take and empty default value
+	if !isTotalUpdate {
+		if user.FirstName == "" {
+			user.FirstName = oldUser.FirstName
+		}
+		if user.LastName == "" {
+			user.LastName = oldUser.LastName
+		}
+	}
 	return us.userDao.Update(user)
 }
 
