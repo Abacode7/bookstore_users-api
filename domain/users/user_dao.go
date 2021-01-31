@@ -7,12 +7,12 @@ import (
 )
 
 const (
-	insertUserQuery                 = `INSERT INTO users (first_name, last_name, email, date_created, status, password) VALUES (?, ?, ?, ?, ?, ?);`
-	getUserQuery                    = `SELECT id, first_name, last_name, email, date_created, status, password FROM users WHERE id=?;`
-	findByStatusQuery                   = `SELECT id, first_name, last_name, email, date_created, status FROM users WHERE status=?;`
-	updateUserQuery                 = `UPDATE users SET first_name=?, last_name=?, email=?, status=?, password=? WHERE id=?;`
-	deleteUserQuery                 = `DELETE FROM users WHERE id=?;`
-	findByEmailQuery = `SELECT * FROM users WHERE email = ? AND status = ?;`
+	insertUserQuery   = `INSERT INTO users (first_name, last_name, email, date_created, status, password) VALUES (?, ?, ?, ?, ?, ?);`
+	getUserQuery      = `SELECT id, first_name, last_name, email, date_created, status, password FROM users WHERE id=?;`
+	findByStatusQuery = `SELECT id, first_name, last_name, email, date_created, status FROM users WHERE status=?;`
+	updateUserQuery   = `UPDATE users SET first_name=?, last_name=?, email=?, status=?, password=? WHERE id=?;`
+	deleteUserQuery   = `DELETE FROM users WHERE id=?;`
+	findByEmailQuery  = `SELECT * FROM users WHERE email = ? AND status = ?;`
 )
 
 type IUserDao interface {
