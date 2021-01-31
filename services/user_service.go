@@ -57,14 +57,14 @@ func (us *userService) SearchUser(status string) ([]users.User, *errors.RestErr)
 
 func (us *userService) UpdateUser(isTotalUpdate bool, user users.User) (*users.User, *errors.RestErr) {
 	oldUser, getErr := us.userDao.Get(user.Id)
-	if getErr != nil  {
+	if getErr != nil {
 		return nil, getErr
 	}
 	// For fields email, password, status and date_created, if values
 	// aren't provided, they retain their old values.
 	if user.Password == "" {
 		user.Password = oldUser.Password
-	}else {
+	} else {
 		var err error
 		user.Password, err = crypto_utils.GetHash(user.Password)
 		if err != nil {
@@ -106,7 +106,7 @@ func (us *userService) LoginUser(request users.UserLoginRequest) (*users.User, *
 	if err != nil {
 		return nil, err
 	}
-	if err := crypto_utils.CompareHashAndPassword(user.Password, request.Password); err != nil{
+	if err := crypto_utils.CompareHashAndPassword(user.Password, request.Password); err != nil {
 		logger.Error("passwords do not match", err)
 		return nil, errors.NewBadRequestError("wrong user password")
 	}
