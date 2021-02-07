@@ -35,12 +35,17 @@ func (uc *userController) CreateUser(c *gin.Context) {
 		c.JSON(restErr.Status, restErr)
 		return
 	}
-	result, serviceErr := uc.userService.CreateUser(user)
+	resultUser, serviceErr := uc.userService.CreateUser(user)
 	if serviceErr != nil {
 		c.JSON(serviceErr.Status, serviceErr)
 		return
 	}
-	c.JSON(http.StatusCreated, result)
+	result, marshErr := resultUser.Marshall(true)
+	if marshErr != nil {
+		c.JSON(marshErr.Status, marshErr)
+		return
+	}
+	c.JSON(http.StatusOK, result)
 }
 
 func (uc *userController) GetUser(c *gin.Context) {
@@ -51,9 +56,14 @@ func (uc *userController) GetUser(c *gin.Context) {
 		c.JSON(restErr.Status, restErr)
 		return
 	}
-	result, serviceErr := uc.userService.GetUser(userID)
+	resultUser, serviceErr := uc.userService.GetUser(userID)
 	if serviceErr != nil {
 		c.JSON(serviceErr.Status, serviceErr)
+		return
+	}
+	result, marshErr := resultUser.Marshall(true)
+	if marshErr != nil {
+		c.JSON(marshErr.Status, marshErr)
 		return
 	}
 	c.JSON(http.StatusOK, result)
@@ -61,12 +71,17 @@ func (uc *userController) GetUser(c *gin.Context) {
 
 func (uc *userController) SearchUser(c *gin.Context) {
 	value := strings.TrimSpace(c.Query("status"))
-	user, err := uc.userService.SearchUser(value)
+	users, err := uc.userService.SearchUser(value)
 	if err != nil {
 		c.JSON(err.Status, err)
 		return
 	}
-	c.JSON(http.StatusOK, user)
+	result, marshErr := users.Marshall(c.GetHeader("x-public") == "true")
+	if marshErr != nil {
+		c.JSON(marshErr.Status, marshErr)
+		return
+	}
+	c.JSON(http.StatusOK, result)
 }
 
 func (uc *userController) UpdateUser(c *gin.Context) {
@@ -76,7 +91,6 @@ func (uc *userController) UpdateUser(c *gin.Context) {
 		c.JSON(jsonErr.Status, jsonErr)
 		return
 	}
-
 	userId, err := strconv.ParseInt(c.Param("user_id"), 10, 64)
 	if err != nil {
 		paramErr := errors.NewBadRequestError("invalid request parameter")
@@ -91,14 +105,17 @@ func (uc *userController) UpdateUser(c *gin.Context) {
 	} else {
 		isTotalUpdate = false
 	}
-
 	resultUser, sevErr := uc.userService.UpdateUser(isTotalUpdate, user)
 	if sevErr != nil {
 		c.JSON(sevErr.Status, sevErr)
 		return
 	}
-
-	c.JSON(http.StatusOK, resultUser)
+	result, marshErr := resultUser.Marshall(true)
+	if marshErr != nil {
+		c.JSON(marshErr.Status, marshErr)
+		return
+	}
+	c.JSON(http.StatusOK, result)
 }
 
 func (uc *userController) DeleteUser(c *gin.Context) {
@@ -122,11 +139,15 @@ func (uc *userController) LoginUser(c *gin.Context) {
 		c.JSON(restErr.Status, restErr)
 		return
 	}
-	user, err := uc.userService.LoginUser(ulr)
+	resultUser, err := uc.userService.LoginUser(ulr)
 	if err != nil {
 		c.JSON(err.Status, err)
 		return
 	}
-	//Todo: Modify user controllers to not return all user details
-	c.JSON(http.StatusOK, user)
+	result, marshErr := resultUser.Marshall(c.GetHeader("x-public") == "true")
+	if marshErr != nil {
+		c.JSON(marshErr.Status, marshErr)
+		return
+	}
+	c.JSON(http.StatusOK, result)
 }

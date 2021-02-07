@@ -18,7 +18,7 @@ const (
 type IUserDao interface {
 	Save(User) (*User, *errors.RestErr)
 	Get(int64) (*User, *errors.RestErr)
-	FindByStatus(string) ([]User, *errors.RestErr)
+	FindByStatus(string) (Users, *errors.RestErr)
 	Update(User) (*User, *errors.RestErr)
 	Delete(int64) *errors.RestErr
 	FindByEmail(string) (*User, *errors.RestErr)
@@ -127,7 +127,7 @@ func (ud *userDao) Delete(userId int64) *errors.RestErr {
 }
 
 /// FindByStatus gets all users with given status
-func (ud *userDao) FindByStatus(status string) ([]User, *errors.RestErr) {
+func (ud *userDao) FindByStatus(status string) (Users, *errors.RestErr) {
 	stmt, prepErr := ud.client.Prepare(findByStatusQuery)
 	if prepErr != nil {
 		logger.Error("error preparing findByStatus query", prepErr)
@@ -142,7 +142,7 @@ func (ud *userDao) FindByStatus(status string) ([]User, *errors.RestErr) {
 	}
 	defer rows.Close()
 
-	users := make([]User, 0)
+	users := make(Users, 0)
 	for rows.Next() {
 		var user User
 		err := rows.Scan(&user.Id, &user.FirstName, &user.LastName, &user.Email, &user.DateCreated, &user.Status)

@@ -11,7 +11,7 @@ import (
 type IUserService interface {
 	CreateUser(users.User) (*users.User, *errors.RestErr)
 	GetUser(int64) (*users.User, *errors.RestErr)
-	SearchUser(string) ([]users.User, *errors.RestErr)
+	SearchUser(string) (users.Users, *errors.RestErr)
 	UpdateUser(bool, users.User) (*users.User, *errors.RestErr)
 	DeleteUser(int64) *errors.RestErr
 	LoginUser(users.UserLoginRequest) (*users.User, *errors.RestErr)
@@ -51,7 +51,7 @@ func (us *userService) GetUser(userID int64) (*users.User, *errors.RestErr) {
 	return us.userDao.Get(userID)
 }
 
-func (us *userService) SearchUser(status string) ([]users.User, *errors.RestErr) {
+func (us *userService) SearchUser(status string) (users.Users, *errors.RestErr) {
 	return us.userDao.FindByStatus(status)
 }
 
