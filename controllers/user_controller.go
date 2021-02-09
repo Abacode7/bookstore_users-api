@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Abacode7/bookstore_oauth-go/oauth"
 	"github.com/Abacode7/bookstore_users-api/domain/users"
 	"github.com/Abacode7/bookstore_users-api/services"
 	"github.com/Abacode7/bookstore_users-api/utils/errors"
@@ -40,7 +41,7 @@ func (uc *userController) CreateUser(c *gin.Context) {
 		c.JSON(serviceErr.Status, serviceErr)
 		return
 	}
-	result, marshErr := resultUser.Marshall(true)
+	result, marshErr := resultUser.Marshall(oauth.IsPublic(c.Request))
 	if marshErr != nil {
 		c.JSON(marshErr.Status, marshErr)
 		return
@@ -49,6 +50,10 @@ func (uc *userController) CreateUser(c *gin.Context) {
 }
 
 func (uc *userController) GetUser(c *gin.Context) {
+	if err := oauth.Authenticate(c.Request); err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
 	id := c.Param("user_id")
 	userID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
@@ -61,7 +66,7 @@ func (uc *userController) GetUser(c *gin.Context) {
 		c.JSON(serviceErr.Status, serviceErr)
 		return
 	}
-	result, marshErr := resultUser.Marshall(true)
+	result, marshErr := resultUser.Marshall(oauth.IsPublic(c.Request))
 	if marshErr != nil {
 		c.JSON(marshErr.Status, marshErr)
 		return
@@ -76,7 +81,7 @@ func (uc *userController) SearchUser(c *gin.Context) {
 		c.JSON(err.Status, err)
 		return
 	}
-	result, marshErr := users.Marshall(c.GetHeader("x-public") == "true")
+	result, marshErr := users.Marshall(oauth.IsPublic(c.Request))
 	if marshErr != nil {
 		c.JSON(marshErr.Status, marshErr)
 		return
@@ -144,7 +149,7 @@ func (uc *userController) LoginUser(c *gin.Context) {
 		c.JSON(err.Status, err)
 		return
 	}
-	result, marshErr := resultUser.Marshall(c.GetHeader("x-public") == "true")
+	result, marshErr := resultUser.Marshall(oauth.IsPublic(c.Request))
 	if marshErr != nil {
 		c.JSON(marshErr.Status, marshErr)
 		return
