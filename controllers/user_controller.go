@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/Abacode7/bookstore_oauth-go/oauth"
 	"github.com/Abacode7/bookstore_users-api/domain/users"
 	"github.com/Abacode7/bookstore_users-api/services"
 	"github.com/Abacode7/bookstore_users-api/utils/errors"
@@ -49,6 +50,10 @@ func (uc *userController) CreateUser(c *gin.Context) {
 }
 
 func (uc *userController) GetUser(c *gin.Context) {
+	if err := oauth.Authenticate(c.Request); err != nil {
+		c.JSON(err.Status, err)
+		return
+	}
 	id := c.Param("user_id")
 	userID, err := strconv.ParseInt(id, 10, 64)
 	if err != nil {
