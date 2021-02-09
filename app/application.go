@@ -6,6 +6,7 @@ import (
 	"github.com/Abacode7/bookstore_users-api/datasources/mysql"
 	"github.com/Abacode7/bookstore_users-api/domain/users"
 	"github.com/Abacode7/bookstore_users-api/services"
+	"github.com/Abacode7/bookstore_users-api/utils/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"log"
@@ -45,5 +46,6 @@ func StartApplication() {
 	mapUrl(userController)
 
 	/// Starts the server
-	router.Run(":8080")
+	logger.Info("starting server...")
+	router.Run(":8081")
 }
