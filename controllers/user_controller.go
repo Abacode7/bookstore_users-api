@@ -41,7 +41,7 @@ func (uc *userController) CreateUser(c *gin.Context) {
 		c.JSON(serviceErr.Status, serviceErr)
 		return
 	}
-	result, marshErr := resultUser.Marshall(true)
+	result, marshErr := resultUser.Marshall(oauth.IsPublic(c.Request))
 	if marshErr != nil {
 		c.JSON(marshErr.Status, marshErr)
 		return
@@ -66,7 +66,7 @@ func (uc *userController) GetUser(c *gin.Context) {
 		c.JSON(serviceErr.Status, serviceErr)
 		return
 	}
-	result, marshErr := resultUser.Marshall(true)
+	result, marshErr := resultUser.Marshall(oauth.IsPublic(c.Request))
 	if marshErr != nil {
 		c.JSON(marshErr.Status, marshErr)
 		return
@@ -81,7 +81,7 @@ func (uc *userController) SearchUser(c *gin.Context) {
 		c.JSON(err.Status, err)
 		return
 	}
-	result, marshErr := users.Marshall(c.GetHeader("x-public") == "true")
+	result, marshErr := users.Marshall(oauth.IsPublic(c.Request))
 	if marshErr != nil {
 		c.JSON(marshErr.Status, marshErr)
 		return
@@ -149,7 +149,7 @@ func (uc *userController) LoginUser(c *gin.Context) {
 		c.JSON(err.Status, err)
 		return
 	}
-	result, marshErr := resultUser.Marshall(c.GetHeader("x-public") == "true")
+	result, marshErr := resultUser.Marshall(oauth.IsPublic(c.Request))
 	if marshErr != nil {
 		c.JSON(marshErr.Status, marshErr)
 		return
