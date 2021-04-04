@@ -3,7 +3,8 @@ module github.com/Abacode7/bookstore_users-api
 go 1.12
 
 require (
-	github.com/Abacode7/bookstore_oauth-go v0.0.0-20210209002848-b5ff36672712 // indirect
+	github.com/Abacode7/bookstore_oauth-go v0.0.0-20210209002848-b5ff36672712
+	github.com/Abacode7/bookstore_utils-go/v2 v2.0.1
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
@@ -17,8 +18,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/ugorji/go v1.2.2 // indirect
-	go.uber.org/multierr v1.6.0 // indirect
-	go.uber.org/zap v1.16.0
 	golang.org/x/crypto v0.0.0-20201221181555-eec23a3978ad
 	golang.org/x/lint v0.0.0-20201208152925-83fdc39ff7b5 // indirect
 	golang.org/x/mod v0.4.0 // indirect
