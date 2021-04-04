@@ -1,6 +1,8 @@
 package users
 
-import "github.com/Abacode7/bookstore_users-api/utils/errors"
+import (
+	"github.com/Abacode7/bookstore_utils-go/v2/rest_error"
+)
 
 const (
 	StatusActive   = "active"
@@ -19,12 +21,12 @@ type User struct {
 	Password    string `json:"password"`
 }
 
-func (user *User) Validate() *errors.RestErr {
+func (user *User) Validate() rest_error.RestErr {
 	if user.Email == "" {
-		return errors.NewBadRequestError("invalid email address")
+		return rest_error.NewBadRequestError("invalid email address")
 	}
 	if user.Password == "" {
-		return errors.NewBadRequestError("invalid password")
+		return rest_error.NewBadRequestError("invalid password")
 	}
 	return nil
 }
